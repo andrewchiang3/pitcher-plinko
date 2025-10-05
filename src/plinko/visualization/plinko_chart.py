@@ -225,4 +225,39 @@ class PlinkoChartGenerator:
             frameon = False
         )
 
-    
+    def generate_chart(self):
+        """
+        Generate the complete plinko chart
+
+        Returns:
+            Matplotlib figure object
+        """
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize = CHART_CONFIG['figsize'])
+        ax.set_xlim(CHART_CONFIG['xlim'])
+        ax.set_ylim(CHART_CONFIG['ylim'])
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        # Draw connecting lines (behind nodes)
+        self._draw_connecting_lines(ax)
+
+        # Draw count nodes (pie charts)
+        for count, position in COUNT_POSITIONS.items():
+            self._draw_count_node(ax, count, position)
+
+        # Add legend
+        self._create_legend(ax)
+
+        # Add title
+        total_pitches = len(self.pitch_data)
+        plt.title(
+            f'{self.pitcher_name} - Pitch Distribution by Count\n'
+            f'Tottal Pitches: {total_pitches}',
+            fontsize = 16,
+            fontweight = 'bold',
+            pad = 20
+        )
+
+        plt.tight_layout()
+        return fig
