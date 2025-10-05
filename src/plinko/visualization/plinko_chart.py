@@ -261,3 +261,17 @@ class PlinkoChartGenerator:
 
         plt.tight_layout()
         return fig
+    
+    def create_plinko_chart(pitch_data: pd.DataFrame, pitcher_name: str = "Pitcher"):
+        """
+        Convenienve function to create a plinko chart
+
+        Args:
+            pitch_data: Processed pitch data
+            pitcher_name: Name to display on chart
+        
+        Returns:
+            Matplotlib figure
+        """
+        generator = PlinkoChartGenerator(pitch_data, pitcher_name)
+        return generator.generate_chart()
