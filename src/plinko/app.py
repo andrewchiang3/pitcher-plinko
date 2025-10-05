@@ -51,11 +51,16 @@ class PlinkoApp:
         with st.spinner("Loading pitcher database..."):
             all_pitchers = self._get_cached_pitchers()
         
-        # Get all pitcher names as a list
-        pitcher_names = all_pitchers['full_name'].unique().tolist()
+        # Get all pitcher names as a list - with normalized versions for search
+        pitcher_names_original = all_pitchers['full_name'].unique().tolist()
+        pitcher_names_normalized = all_pitchers['full_name_normalized'].unique().tolist()
+        
+        # Create combined list: "Normalized Version (Original Name)" for searching
+        from plinko.utils.constants import remove_accents
+        pitcher_names = [""] + [f"{remove_accents(name)} ({name})" if remove_accents(name) != name else name for name in pitcher_names_original]
         
         # Add empty option at the start
-        pitcher_names.insert(0, "")
+        # pitcher_names.insert(0, "")  # Already added above
         
         # Searchable selectbox - type to filter!
         selected_pitcher = st.sidebar.selectbox(
@@ -65,8 +70,12 @@ class PlinkoApp:
             help="Start typing to filter pitchers, then select from dropdown"
         )
         
-        # Parse the selected name
+        # Parse the selected name - extract from parentheses if present
         if selected_pitcher:
+            if "(" in selected_pitcher and ")" in selected_pitcher:
+                # Extract name from format "Normalized (Original Name)"
+                selected_pitcher = selected_pitcher.split("(")[1].replace(")", "").strip()
+            
             name_parts = selected_pitcher.split()
             first_name = name_parts[0] if len(name_parts) > 0 else ""
             last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
@@ -77,7 +86,7 @@ class PlinkoApp:
         year = st.sidebar.selectbox(
             "Season",
             AVAILABLE_SEASONS,
-            index=1  # Default to 2024 since 2025 season hasn't started
+            index = 0
         )
         
         # Generate button

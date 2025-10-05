@@ -79,3 +79,25 @@ def get_season_dates(year):
 
 # Available seasons
 AVAILABLE_SEASONS = [2025, 2024, 2023, 2022, 2021, 2020]
+
+import unicodedata
+import pandas as pd
+
+def remove_accents(text: str) -> str:
+    """
+    Remove accents from unicode string
+    
+    Example: 'José' -> 'Jose', 'Muñoz' -> 'Munoz'
+    
+    Args:
+        text: String with potential accents
+        
+    Returns:
+        String with accents removed
+    """
+    if pd.isna(text):
+        return ""
+    
+    # Normalize to NFD (decomposed form), then remove combining characters
+    nfd = unicodedata.normalize('NFD', str(text))
+    return ''.join(char for char in nfd if unicodedata.category(char) != 'Mn')

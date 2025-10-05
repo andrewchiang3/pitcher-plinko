@@ -6,6 +6,7 @@ Handles player lookup and pitch data retrieval
 from pybaseball import statcast_pitcher, playerid_lookup
 import pandas as pd
 from typing import Tuple, Optional
+from ..utils.constants import remove_accents
 
 class PitcherDataFetcher:
     """
@@ -128,6 +129,9 @@ class PitcherDataFetcher:
                 players['name_first'].str.title() + ' ' +
                 players['name_last'].str.title()
             )
+
+            # Create (accent-free) columns for searching
+            players['full_name_normalized'] = players['full_name'].apply(remove_accents).str.lower()
 
             players = players.sort_values(['name_last', 'name_first'])
 
