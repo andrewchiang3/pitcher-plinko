@@ -82,3 +82,82 @@ class PlinkoChartGenerator:
                     flow_counts[transition] = flow_counts.get(transition, 0) + 1
 
         return flow_counts
+    
+    def _draw_count_node(self, ax, count: str, position: Tuple[float, float]):
+        """
+        Draw a count node (pie chart) on the chart 
+
+        Args:
+            ax: Matplotlib axis
+            count: Count string (e.g., '0-0')
+            position: (x, y) coordinates
+        """
+        x, y = position
+        pie_radius = CHART_CONFIG['pie_radius']
+        
+        # If no data for this count, draw empty circle
+        if count not in self.count_data or len(self.count_data[count]) == 0:
+            circle = plt.Circle(
+                (x, y), pie_radius,
+                color = 'lightgray',
+                fill = True,
+                alpha = 0.3,
+                zorder = 1
+            )
+            ax.add_patch(circle)
+            ax.text(
+                x, y, count,
+                ha = 'center', va = 'center',
+                fontsize = 10, fontweight = 'bold',
+                zorder = 3
+            )
+            return
+        
+        # Get pitch type data for this count
+        pitch_types = self.count_data[count]
+        total_pitches = pitch_types.sum()
+
+        # Draw pie chart wedges
+        start_angle = 90
+        for pitch_type, count_val in pitch_types.items():
+            angle = 360 * (count_val / total_pitches)
+            color = PITCH_COLORS.get(pitch_type, '#cccccc')
+
+            wedge = Wedge(
+                (x, y), pie_radius,
+                start_angle, start_angle + angle,
+                facecolor = color,
+                edgecolor = 'white',
+                linewidth = 2,
+                zorder = 2
+            )
+            ax.add_patch(wedge)
+            start_angle += angle
+
+        # Draw inner white circle (donut chart effect)
+        inner_radius = pie_radius * CHART_CONFIG['inner_circle_ratio']
+        inner_circle = plt.Circle(
+            (x, y), inner_radius,
+            color = 'white',
+            zorder = 3
+        )
+        ax.add_patch(inner_circle)
+
+        # Add count label in center
+        ax.text(
+            x, y, count,
+            ha = 'center', va = 'center',
+            fontsize = 9, fontweight = 'bold',
+            zorder = 4
+        )
+
+        # Add pitch count below node
+        ax.text(
+            x, y - pie_radius - 0.15,
+            f'n={int(total_pitches)}',
+            ha = 'center', va = 'top',
+            fontsize = 8,
+            zorder = 4
+        )
+
+    def _draw_connecting_lines(self, ax):
