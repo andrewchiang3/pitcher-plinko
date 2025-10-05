@@ -161,3 +161,35 @@ class PlinkoChartGenerator:
         )
 
     def _draw_connecting_lines(self, ax):
+        """
+        Draw lines connecting count nodes
+        Line thickness represents frequency of transitions
+
+        Args:
+            ax: Matplotlib axis
+        """
+        if not self.flow_counts:
+            return
+        
+        max_flow = max(self.flow_counts.values())
+        min_width = CHART_CONFIG['min_line_width']
+        max_width = CHART_CONFIG['max_line_width']
+
+        for start_count, end_count in COUNT_TRANSITIONS:
+            if start_count in COUNT_POSITIONS and end_count in COUNT_POSITIONS:
+                x1, y1 = COUNT_POSITIONS[start_count]
+                x2, y2 = COUNT_POSITIONS[end_count]
+                transition = (start_count, end_count)
+                flow_count = self.flow_counts.get(transition, 0)
+
+                if flow_count > 0:
+                    # Scale line width based on flow
+                    line_width = min_width + (flow_count / max_flow) * (max_width - min_width)
+
+                    ax.plot(
+                        [x1, x2], [y1, y2],
+                        'k-',
+                        alpha = CHART_CONFIG['line_alpha'],
+                        linewidth = line_width,
+                        zorder = 0
+                    )
