@@ -46,25 +46,52 @@ class PlinkoApp:
             Tuple of (first_name, last_name, year, generate_clicked)
         """
         st.sidebar.header("Pitcher Search")
-
-        # Name inputs
-        col1, col2 = st.sidebar.columns(2)
-        with col1:
-            first_name = st.text_input("First Name", value = "")
-        with col2:
-            last_name = st.text_input("Last Name", value = "")
-
+        
+        # Load pitcher list (cached)
+        with st.spinner("Loading pitcher database..."):
+            all_pitchers = self._get_cached_pitchers()
+        
+        # Get all pitcher names as a list
+        pitcher_names = all_pitchers['full_name'].unique().tolist()
+        
+        # Add empty option at the start
+        pitcher_names.insert(0, "")
+        
+        # Searchable selectbox - type to filter!
+        selected_pitcher = st.sidebar.selectbox(
+            "Search and Select Pitcher",
+            options=pitcher_names,
+            index=0,
+            help="Start typing to filter pitchers, then select from dropdown"
+        )
+        
+        # Parse the selected name
+        if selected_pitcher:
+            name_parts = selected_pitcher.split()
+            first_name = name_parts[0] if len(name_parts) > 0 else ""
+            last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+        else:
+            first_name, last_name = "", ""
+        
         # Season selector
         year = st.sidebar.selectbox(
             "Season",
             AVAILABLE_SEASONS,
-            index = 0
+            index=1  # Default to 2024 since 2025 season hasn't started
         )
-
+        
         # Generate button
-        generate_clicked = st.sidebar.button("Generate Chart", type = "primary")
-
+        generate_clicked = st.sidebar.button("Generate Chart", type="primary")
+        
         return first_name, last_name, year, generate_clicked
+    
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
+    def _get_cached_pitchers(_self):
+        """
+        Get cached list of all pitchers
+        The underscore in _self prevents Streamlit from hashing the class instance
+        """
+        return PitcherDataFetcher.get_all_pitchers()
     
     def _render_chart(self, first_name: str, last_name: str, year: int):
         """

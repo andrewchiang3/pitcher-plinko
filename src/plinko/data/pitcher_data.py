@@ -109,6 +109,61 @@ class PitcherDataFetcher:
 
         return pitch_data
     
+    @staticmethod
+    def get_all_pitchers() -> pd.DataFrame:
+        """
+        Get a list of all MLB pitchers from pybaseball
+        This is cached to avoid repeated lookups
+
+        Returns:
+            DataFrame with all pitcher information
+        """
+        try:
+            from pybaseball import chadwick_register
+            players = chadwick_register()
+
+            players = players[players['key_mlbam'].notna()].copy()
+
+            players['full_name'] = (
+                players['name_first'].str.title() + ' ' +
+                players['name_last'].str.title()
+            )
+
+            players = players.sort_values(['name_last', 'name_first'])
+
+            return players
+        except Exception as e:
+            raise Exception(f"Error fetching pitcher list: {str(e)}")
+        
+    @staticmethod
+    def search_pitchers(search_term: str, all_pitchers: pd.DataFrame, limit: int = 50) -> list:
+        """
+        Search for pitchers by name
+
+        Args:
+            search_term: Name to search for
+            all_pitchers: DataFrame of all pitchers
+            limit: Maximum number of results to return
+        
+        Returns:
+            List of matching pitcher names
+        """
+        if not search_term:
+            return []
+        
+        search_term = search_term.lower()
+
+        # Search in both first and last names
+        mask = (
+            all_pitchers['name_first'].str.lower().str.contains(search_term, na=False) |
+            all_pitchers['name_last'].str.lower().str.contains(search_term, na=False) |
+            all_pitchers['full_name'].str.lower().str.contains(search_term, na=False)
+        )
+        
+        matches = all_pitchers[mask]['full_name'].unique().tolist()
+        
+        return matches[:limit]
+    
     def get_processed_data(
             self,
             first_name: str,
