@@ -22,7 +22,7 @@ class PlinkoApp:
 
     def __init__(self):
         """Initialize the application"""
-        self.data_fether = PitcherDataFetcher()
+        self.data_fetcher = PitcherDataFetcher()
         self._setup_page()
 
     def _setup_page(self):
@@ -77,7 +77,7 @@ class PlinkoApp:
         """
         with st.spinner(f"Fetching data for {first_name} {last_name}..."):
             # Fetch and process data
-            pitch_data, pitcher_name, error = self.data_fether.get_processed_data(
+            pitch_data, pitcher_name, error = self.data_fetcher.get_processed_data(
                 first_name, last_name, year
             )
 
@@ -129,10 +129,10 @@ class PlinkoApp:
         if generate_clicked:
             self._render_chart(first_name, last_name, year)
 
-    def main():
-        """Application entry point"""
-        app = PlinkoApp()
-        app.run()
+def main():
+    """Application entry point"""
+    app = PlinkoApp()
+    app.run()
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()

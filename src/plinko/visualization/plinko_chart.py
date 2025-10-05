@@ -48,7 +48,7 @@ class PlinkoChartGenerator:
         count_data = {}
         for count in COUNT_POSITIONS.keys():
             count_pitches = self.pitch_data[self.pitch_data['count'] == count]
-            pitch_type_counts = count_pitches['pitch_type'].value.counts()
+            pitch_type_counts = count_pitches['pitch_type'].value_counts()
             count_data[count] = pitch_type_counts
 
         return count_data
@@ -253,7 +253,7 @@ class PlinkoChartGenerator:
         total_pitches = len(self.pitch_data)
         plt.title(
             f'{self.pitcher_name} - Pitch Distribution by Count\n'
-            f'Tottal Pitches: {total_pitches}',
+            f'Total Pitches: {total_pitches}',
             fontsize = 16,
             fontweight = 'bold',
             pad = 20
@@ -262,9 +262,10 @@ class PlinkoChartGenerator:
         plt.tight_layout()
         return fig
     
-    def create_plinko_chart(pitch_data: pd.DataFrame, pitcher_name: str = "Pitcher"):
+
+def create_plinko_chart(pitch_data: pd.DataFrame, pitcher_name: str = "Pitcher"):
         """
-        Convenienve function to create a plinko chart
+        Convenience function to create a plinko chart
 
         Args:
             pitch_data: Processed pitch data

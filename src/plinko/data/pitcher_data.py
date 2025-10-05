@@ -91,7 +91,7 @@ class PitcherDataFetcher:
             Processed DataFrame with count column added
         """
         # Sort by game, at-bat, and pitch number
-        data_sorted = raw_data.sort_vales(
+        data_sorted = raw_data.sort_values(
             by=['game_date', 'at_bat_number', 'pitch_number']
         )
 
