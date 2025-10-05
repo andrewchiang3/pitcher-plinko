@@ -193,3 +193,36 @@ class PlinkoChartGenerator:
                         linewidth = line_width,
                         zorder = 0
                     )
+
+    def _create_legend(self, ax):
+        """
+        Create legend showing pitch types and counts
+
+        Args:
+            ax: Matplotlib axis
+        """
+        legend_elements = []
+
+        # Get pitch types that were actually used
+        pitch_counts = self.pitch_data['pitch_type'].value_counts()
+
+        # Create legend entry for each pitch type
+        for pitch_type in pitch_counts.index:
+            if pitch_type in PITCH_COLORS and pd.notna(pitch_type):
+                count = pitch_counts.get(pitch_type, 0)
+                label = f"{PITCH_NAMES.get(pitch_type, pitch_type)} ({int(count)})"
+                patch = patches.Patch(color = PITCH_COLORS[pitch_type], label = label)
+                legend_elements.append(patch)
+
+        # Add legend to chart
+        num_pitches = len(legend_elements)
+        ax.legend(
+            handles = legend_elements,
+            loc = 'lower center',
+            bbox_to_anchor = (0.5, -0.15),
+            fontsize = 11,
+            ncol = num_pitches,
+            frameon = False
+        )
+
+    
