@@ -37,25 +37,33 @@ class PitcherDataFetcher:
     def get_pitcher_id(self, first_name: str, last_name: str) -> Tuple[Optional[int], Optional[str]]:
         """
         Get pitcher's MLB ID and full name
-
+        Prioritizes most recently active players if multiple matches
+        
         Args:
             first_name: Pitcher's first name
             last_name: Pitcher's last name
-
+            
         Returns:
             Tuple of (pitcher_id, full_name) or (None, None) if not found
         """
         player_data = self.lookup_pitcher(first_name, last_name)
-
+        
         if player_data is None:
             return None, None
         
+        # If multiple players, sort by most recent activity
+        if len(player_data) > 1:
+            # Sort by mlb_played_last (descending) to get most recent player
+            if 'mlb_played_last' in player_data.columns:
+                player_data = player_data.sort_values('mlb_played_last', ascending=False)
+        
+        # Take the first match (most recent player if sorted)
         pitcher_id = player_data.iloc[0]['key_mlbam']
         pitcher_full_name = (
             f"{player_data.iloc[0]['name_first'].title()} "
             f"{player_data.iloc[0]['name_last'].title()}"
         )
-
+        
         return int(pitcher_id), pitcher_full_name
     
     def fetch_pitch_data(
@@ -115,27 +123,51 @@ class PitcherDataFetcher:
         """
         Get a list of all MLB pitchers from pybaseball
         This is cached to avoid repeated lookups
-
+        
         Returns:
             DataFrame with all pitcher information
         """
         try:
             from pybaseball import chadwick_register
+            
+            # Get all players from Chadwick register
             players = chadwick_register()
-
+            
+            # Filter to only include players with MLB IDs (key_mlbam)
             players = players[players['key_mlbam'].notna()].copy()
-
-            players['full_name'] = (
-                players['name_first'].str.title() + ' ' +
+            
+            # Create base full name
+            players['base_name'] = (
+                players['name_first'].str.title() + ' ' + 
                 players['name_last'].str.title()
             )
-
-            # Create (accent-free) columns for searching
+            
+            # Find duplicates and add disambiguating info
+            name_counts = players['base_name'].value_counts()
+            duplicates = name_counts[name_counts > 1].index
+            
+            def create_display_name(row):
+                base = row['base_name']
+                
+                # If name is duplicated, add disambiguating info
+                if base in duplicates:
+                    # Use debut year for context
+                    debut = f"{int(row['mlb_played_first'])}" if pd.notna(row.get('mlb_played_first')) else "?"
+                    return f"{base} (debut: {debut})"
+                
+                return base
+            
+            players['full_name'] = players.apply(create_display_name, axis=1)
+            
+            # Create normalized (accent-free) columns for searching
+            from ..utils.constants import remove_accents
             players['full_name_normalized'] = players['full_name'].apply(remove_accents).str.lower()
-
-            players = players.sort_values(['name_last', 'name_first'])
-
+            
+            # Sort by last name, first name, then by most recent debut
+            players = players.sort_values(['name_last', 'name_first', 'mlb_played_last'], ascending=[True, True, False])
+            
             return players
+            
         except Exception as e:
             raise Exception(f"Error fetching pitcher list: {str(e)}")
         

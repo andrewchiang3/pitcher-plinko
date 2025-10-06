@@ -43,7 +43,7 @@ class PlinkoApp:
         Render sidebar with pitcher search inputs
 
         Returns:
-            Tuple of (first_name, last_name, year, generate_clicked)
+            Tuple of (pitcher_id, pitcher_display_name, year, generate_clicked)
         """
         st.sidebar.header("Pitcher Search")
         
@@ -51,16 +51,25 @@ class PlinkoApp:
         with st.spinner("Loading pitcher database..."):
             all_pitchers = self._get_cached_pitchers()
         
-        # Get all pitcher names as a list - with normalized versions for search
-        pitcher_names_original = all_pitchers['full_name'].unique().tolist()
-        pitcher_names_normalized = all_pitchers['full_name_normalized'].unique().tolist()
-        
-        # Create combined list: "Normalized Version (Original Name)" for searching
+        # Get all pitcher names as a list
         from plinko.utils.constants import remove_accents
-        pitcher_names = [""] + [f"{remove_accents(name)} ({name})" if remove_accents(name) != name else name for name in pitcher_names_original]
+        import pandas as pd
+        
+        pitcher_names_with_duplicates = []
+        for name in all_pitchers['full_name'].unique():
+            # Skip NaN values
+            if pd.notna(name):
+                pitcher_names_with_duplicates.append(name)  # Original with accents
+                normalized = remove_accents(name)
+                # Only add normalized version if it's different
+                if normalized != name:
+                    pitcher_names_with_duplicates.append(normalized)
+        
+        # Remove duplicates and sort
+        pitcher_names = sorted(list(set(pitcher_names_with_duplicates)))
         
         # Add empty option at the start
-        # pitcher_names.insert(0, "")  # Already added above
+        pitcher_names.insert(0, "")
         
         # Searchable selectbox - type to filter!
         selected_pitcher = st.sidebar.selectbox(
@@ -70,29 +79,32 @@ class PlinkoApp:
             help="Start typing to filter pitchers, then select from dropdown"
         )
         
-        # Parse the selected name - extract from parentheses if present
+        # Get the pitcher ID and clean name
+        pitcher_id = None
+        pitcher_display_name = None
+        
         if selected_pitcher:
-            if "(" in selected_pitcher and ")" in selected_pitcher:
-                # Extract name from format "Normalized (Original Name)"
-                selected_pitcher = selected_pitcher.split("(")[1].replace(")", "").strip()
+            # Remove birth year/debut info: "Luis Castillo (b.1992, debut 2017)" -> "Luis Castillo"
+            clean_name = selected_pitcher.split("(")[0].strip()
             
-            name_parts = selected_pitcher.split()
-            first_name = name_parts[0] if len(name_parts) > 0 else ""
-            last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
-        else:
-            first_name, last_name = "", ""
+            # Find the pitcher in the dataframe to get their ID
+            match = all_pitchers[all_pitchers['full_name'] == selected_pitcher]
+            
+            if not match.empty:
+                pitcher_id = int(match.iloc[0]['key_mlbam'])
+                pitcher_display_name = clean_name
         
         # Season selector
         year = st.sidebar.selectbox(
             "Season",
             AVAILABLE_SEASONS,
-            index = 0
+            index=1  # Default to 2024
         )
         
         # Generate button
         generate_clicked = st.sidebar.button("Generate Chart", type="primary")
         
-        return first_name, last_name, year, generate_clicked
+        return pitcher_id, pitcher_display_name, year, generate_clicked
     
     @st.cache_data(ttl=3600)  # Cache for 1 hour
     def _get_cached_pitchers(_self):
@@ -107,20 +119,28 @@ class PlinkoApp:
         Fetch data and render the plinko chart
 
         Args:
-            first_name = Pitcher's first name
+            first_name: Pitcher's first name
             last_name: Pitcher's last name
             year: Season year
         """
         with st.spinner(f"Fetching data for {first_name} {last_name}..."):
+            # Debug: Show what we're searching for
+            st.info(f"Searching for: First='{first_name}', Last='{last_name}', Year={year}")
+            
             # Fetch and process data
             pitch_data, pitcher_name, error = self.data_fetcher.get_processed_data(
                 first_name, last_name, year
             )
-
+            
             # Handle errors
             if error:
                 st.error(error)
                 st.write("Please check the pitcher name and try again.")
+                # Debug: Show the exact error
+                with st.expander("Debug Info"):
+                    st.write(f"First name used: '{first_name}'")
+                    st.write(f"Last name used: '{last_name}'")
+                    st.write(f"Year: {year}")
                 return
             
             # Generate and display chart
@@ -153,17 +173,57 @@ class PlinkoApp:
             st.metric("Total Pitches", len(pitch_data))
             st.metric("Pitch Types", len(pitch_counts))
 
+    def _render_chart_by_id(self, pitcher_id: int, pitcher_name: str, year: int):
+        """
+        Fetch data and render the plinko chart using pitcher ID
+        
+        Args:
+            pitcher_id: MLB pitcher ID
+            pitcher_name: Display name for the pitcher
+            year: Season year
+        """
+        with st.spinner(f"Fetching data for {pitcher_name}..."):
+            # Fetch data directly by ID
+            start_date = f"{year}-03-01"
+            end_date = f"{year}-10-01"
+            
+            try:
+                raw_data = self.data_fetcher.fetch_pitch_data(pitcher_id, start_date, end_date)
+                
+                if raw_data is None:
+                    st.error(f"No pitch data found for {pitcher_name} in {year}")
+                    return
+                
+                # Process data
+                pitch_data = self.data_fetcher.process_pitch_data(raw_data)
+                
+                # Generate and display chart
+                fig = create_plinko_chart(
+                    pitch_data,
+                    pitcher_name=f"{pitcher_name} ({year})"
+                )
+                st.pyplot(fig)
+                
+                # Display summary statistics
+                self._render_summary_stats(pitch_data)
+                
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
     def run(self):
         """Main application run method"""
         # Render header
         self._render_header()
 
         # Render sidebar and get inputs
-        first_name, last_name, year, generate_clicked = self._render_sidebar()
+        pitcher_id, pitcher_display_name, year, generate_clicked = self._render_sidebar()
 
         # Generate chart if button clicked
         if generate_clicked:
-            self._render_chart(first_name, last_name, year)
+            if pitcher_id:
+                self._render_chart_by_id(pitcher_id, pitcher_display_name, year)
+            else:
+                st.warning("Please select a pitcher first")
 
 def main():
     """Application entry point"""
