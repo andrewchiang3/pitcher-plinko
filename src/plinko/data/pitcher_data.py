@@ -7,6 +7,7 @@ from pybaseball import statcast_pitcher, playerid_lookup
 import pandas as pd
 from typing import Tuple, Optional
 from ..utils.constants import remove_accents
+from datetime import datetime
 
 class PitcherDataFetcher:
     """
@@ -135,6 +136,13 @@ class PitcherDataFetcher:
             
             # Filter to only include players with MLB IDs (key_mlbam)
             players = players[players['key_mlbam'].notna()].copy()
+
+            # Filter to only current players
+            current_year = datetime.now().year - 1
+            players = players[
+                (players['mlb_played_last'].notna()) &
+                (players['mlb_played_last'] >= current_year)
+            ]
             
             # Create base full name
             players['base_name'] = (

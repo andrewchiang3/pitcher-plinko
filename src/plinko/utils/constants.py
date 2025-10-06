@@ -1,20 +1,20 @@
 """
 Constants for MLB Plinko Chart
-Contains pitch type definitions, colors, and chart layout configurations
+Enhanced with modern color scheme and styling options
 """
 
-# Pitch type color mappings
+# Enhanced pitch type color mappings - more vibrant and distinguishable
 PITCH_COLORS = {
-    'FF': '#d22d49',  # Four-seam fastball - red
-    'SI': '#c14a09',  # Sinker - orange
-    'FC': '#933f2c',  # Cutter - brown
-    'SL': '#ebc51d',  # Slider - yellow
-    'CU': '#00d1ed',  # Curveball - cyan
-    'CH': '#1DBE3A',  # Changeup - green
-    'FS': '#13bb6b',  # Splitter - teal
-    'KC': '#3bacb6',  # Knuckle curve - blue
-    'ST': '#f598ce',  # Sweeper - pink
-    'SV': '#ea7125',  # Slurve - orange
+    'FF': '#FF4B4B',  # Four-seam fastball - Streamlit red
+    'SI': '#FF8C42',  # Sinker - orange
+    'FC': '#B85C38',  # Cutter - brown
+    'SL': '#FFC914',  # Slider - gold
+    'CU': '#00C9FF',  # Curveball - bright cyan
+    'CH': '#21C354',  # Changeup - green
+    'FS': '#00D4AA',  # Splitter - teal
+    'KC': '#4A9EFF',  # Knuckle curve - blue
+    'ST': '#FF6EC7',  # Sweeper - pink
+    'SV': '#FF7043',  # Slurve - coral
 }
 
 # Full pitch type names for display
@@ -26,9 +26,9 @@ PITCH_NAMES = {
     'CU': 'Curveball',
     'CH': 'Changeup',
     'FS': 'Splitter',
-    'KC': 'Kunckle Curve',
+    'KC': 'Knuckle Curve',
     'ST': 'Sweeper',
-    'SV':  'Slurve'
+    'SV': 'Slurve'
 }
 
 # Count positions on the plinko chart (x, y coordinates)
@@ -61,16 +61,34 @@ COUNT_TRANSITIONS = [
     ('3-1', '3-2'), ('2-2', '3-2')
 ]
 
-# Chart configuration
+# Enhanced chart configuration with better styling
 CHART_CONFIG = {
-    'figsize': (20, 10),
+    'figsize': (18, 9),
     'xlim': (-1, 5),
     'ylim': (-1, 5),
-    'pie_radius': 0.25,
+    'pie_radius': 0.28,
     'inner_circle_ratio': 0.5,
-    'min_line_width': 1,
-    'max_line_width': 20,
-    'line_alpha': 0.4,
+    'min_line_width': 1.5,
+    'max_line_width': 18,
+    'line_alpha': 0.3,
+}
+
+# Streamlit theme colors
+STREAMLIT_THEME = {
+    'light': {
+        'background': '#FFFFFF',
+        'text': '#262730',
+        'secondary_text': '#808495',
+        'border': '#E6EBF1',
+        'empty_node': '#F0F2F6'
+    },
+    'dark': {
+        'background': '#0E1117',
+        'text': '#FAFAFA',
+        'secondary_text': '#A3A8B4',
+        'border': '#262730',
+        'empty_node': '#31333F'
+    }
 }
 
 # Get start and end dates for a baseball season
@@ -98,6 +116,5 @@ def remove_accents(text: str) -> str:
     if pd.isna(text):
         return ""
     
-    # Normalize to NFD (decomposed form), then remove combining characters
     nfd = unicodedata.normalize('NFD', str(text))
     return ''.join(char for char in nfd if unicodedata.category(char) != 'Mn')

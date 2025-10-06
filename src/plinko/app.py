@@ -98,7 +98,7 @@ class PlinkoApp:
         year = st.sidebar.selectbox(
             "Season",
             AVAILABLE_SEASONS,
-            index=1  # Default to 2024
+            index = 0
         )
         
         # Generate button
